@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migration-job
+  namespace: istrays
+spec:
+  template:
+    spec:
+      containers:
+        - name: flyway
+          image: flyway/flyway:8.4.0-alpine
+          args:
+            - migrate
+          env:
+            - name: FLYWAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: users-configmap
+                  key: SPRING_DATASOURCE_URL
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: users-secret
+                  key: db_user
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: users-secret
+                  key: db_password
+          volumeMounts:
+            - mountPath: /flyway/sql
+              name: sql
+      volumes:
+        - name: sql
+          configMap:
+            name: users-migration
+      restartPolicy: Never
